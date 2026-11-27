@@ -16,6 +16,8 @@ This lists which dependencies are missing, where settings are read from, and
 whether MPD is reachable. Then:
     sh run.sh
 Set host, password, music folder and replay gain in **Preferences**
+In order to install a desktop file for Gnome:
+    sh install-desktop.sh
 
 ## Arch package
     sh packaging/arch/make-package.sh
