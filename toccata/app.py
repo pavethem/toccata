@@ -5737,9 +5737,24 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
                 GLib.timeout_add(50, self._scroll_to_artist, idx, tries - 1)
             return False
         self._artist_scroll_pending = False
-        self._debug_artists("scroll_to", f"idx={idx}")
-        self.art_view.scroll_to(idx, Gtk.ListScrollFlags.NONE, None)
-        GLib.idle_add(self._center_artist, idx)  # once the list has laid out the new position
+        # In frame-clock ticks, not right away: a window that gets no frames (covered by
+        # another window, mutter sends no frame callbacks) has not laid out the new
+        # list, and GTK's first layout afterwards dropped our scroll and put the list
+        # at the bottom (user report 2026-11-27 "jumps to the bottom", window not
+        # focused; reproduced headless). A tick runs before that frame's layout.
+        self._artist_scroll_gen = gen = getattr(self, "_artist_scroll_gen", 0) + 1
+        steps = iter(("scroll", "centre"))
+
+        def tick(_view, _clock):
+            if gen != self._artist_scroll_gen or idx >= self.art_sel.get_n_items():
+                return GLib.SOURCE_REMOVE  # a newer scroll, or the list changed
+            if next(steps) == "scroll":
+                self._debug_artists("scroll_to", f"idx={idx}")
+                self.art_view.scroll_to(idx, Gtk.ListScrollFlags.NONE, None)
+                return GLib.SOURCE_CONTINUE  # centre in the next frame, after this layout
+            self._center_artist(idx)
+            return GLib.SOURCE_REMOVE
+        self.art_view.add_tick_callback(tick)
         return False
 
     def _on_art_view_map(self, _view):

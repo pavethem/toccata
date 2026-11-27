@@ -112,6 +112,27 @@ def steps():
     win.views.set_visible_child_name("library")
     yield 800
     check("back in the library: artist centred", centred(win, "Filler 1500"), True)
+    # an update while another window covers ours: mutter sends no frame callbacks, so
+    # nothing is laid out; GTK's first layout once uncovered put the list at the
+    # bottom (user report 2026-11-27, window not focused). Mutter only (no broadway).
+    if os.environ.get("WAYLAND_DISPLAY", "").startswith("toccata-test-"):
+        from gi.repository import Gtk
+        win.locate_album(appmod.albumslib.AlbumEntry("Filler 0300", "A"))
+        yield 1200
+        cover = Gtk.Window()
+        cover.maximize()
+        cover.present()
+        yield 1500
+        frames = win.get_frame_clock().get_frame_counter()
+        update(win, [{"file": "n/5.flac", "Title": "t", "AlbumArtist": "Filler 1600", "Album": "Covered",
+                      "Last-Modified": "2026-11-20T10:20:00Z"}], 1795169600)
+        yield 1500
+        check("covered: no frames meanwhile (test premise)", win.get_frame_clock().get_frame_counter() - frames <= 1, True)
+        check("covered: newest artist selected", win._selected_artist, "Filler 1600")
+        cover.close()
+        win.present()
+        yield 1500
+        check("uncovered: artist centred, not at the bottom", centred(win, "Filler 1600"), True)
     # a plain reload (e.g. a genre switch) keeps the artist
     win.locate_album(appmod.albumslib.AlbumEntry("Filler 1000", "A"))
     yield 1200
