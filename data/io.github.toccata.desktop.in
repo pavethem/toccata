@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Toccata
+GenericName=Music Player
+Comment=MPD client with tag editing
+Exec=sh @RUN_SH@ %U
+Icon=io.github.toccata
+Terminal=false
+Categories=AudioVideo;Audio;Player;GTK;
+Keywords=MPD;music;player;tags;
+StartupNotify=true
+DBusActivatable=false

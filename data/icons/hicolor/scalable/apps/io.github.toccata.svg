@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1.1">
+ <!-- toccata app icon, drawn in the Papirus style: flat shapes, 20% shadow one
+      pixel below, soft top highlight. A compact disc. -->
+ <rect style="opacity:0.2" width="56" height="56" x="4" y="5" rx="10" ry="10"/>
+ <rect style="fill:#5b6ee1" width="56" height="56" x="4" y="4" rx="10" ry="10"/>
+ <circle style="opacity:0.2" cx="32.0" cy="33.0" r="22.0"/>
+ <circle style="fill:#e4e8ef" cx="32.0" cy="32.0" r="22.0"/>
+ <path style="fill:#ff7eb6;opacity:0.55" d="M 11.33,24.48 A 22.0,22.0 0 0 1 12.95,21.00 L 25.14,28.04 A 7.92,7.92 0 0 0 24.56,29.29 Z"/>
+ <path style="fill:#ffd36e;opacity:0.55" d="M 12.76,21.33 A 22.0,22.0 0 0 1 14.90,18.15 L 25.85,27.02 A 7.92,7.92 0 0 0 25.07,28.16 Z"/>
+ <path style="fill:#7ee0a1;opacity:0.55" d="M 14.66,18.46 A 22.0,22.0 0 0 1 17.28,15.65 L 26.70,26.11 A 7.92,7.92 0 0 0 25.76,27.12 Z"/>
+ <path style="fill:#6ec8ff;opacity:0.55" d="M 17.00,15.91 A 22.0,22.0 0 0 1 20.02,13.55 L 27.69,25.36 A 7.92,7.92 0 0 0 26.60,26.21 Z"/>
+ <path style="fill:#b28cff;opacity:0.55" d="M 19.70,13.76 A 22.0,22.0 0 0 1 23.05,11.90 L 28.78,24.76 A 7.92,7.92 0 0 0 27.57,25.43 Z"/>
+ <path style="fill:#ff7eb6;opacity:0.55" d="M 52.67,39.52 A 22.0,22.0 0 0 1 51.05,43.00 L 38.86,35.96 A 7.92,7.92 0 0 0 39.44,34.71 Z"/>
+ <path style="fill:#ffd36e;opacity:0.55" d="M 51.24,42.67 A 22.0,22.0 0 0 1 49.10,45.85 L 38.15,36.98 A 7.92,7.92 0 0 0 38.93,35.84 Z"/>
+ <path style="fill:#7ee0a1;opacity:0.55" d="M 49.34,45.54 A 22.0,22.0 0 0 1 46.72,48.35 L 37.30,37.89 A 7.92,7.92 0 0 0 38.24,36.88 Z"/>
+ <path style="fill:#6ec8ff;opacity:0.55" d="M 47.00,48.09 A 22.0,22.0 0 0 1 43.98,50.45 L 36.31,38.64 A 7.92,7.92 0 0 0 37.40,37.79 Z"/>
+ <path style="fill:#b28cff;opacity:0.55" d="M 44.30,50.24 A 22.0,22.0 0 0 1 40.95,52.10 L 35.22,39.24 A 7.92,7.92 0 0 0 36.43,38.57 Z"/>
+ <circle style="fill:none;stroke:#ffffff;stroke-width:1;opacity:0.6" cx="32.0" cy="32.0" r="17.60"/>
+ <circle style="fill:#c3c9d4" cx="32.0" cy="32.0" r="7.92"/>
+ <circle style="fill:#d6dbe3" cx="32.0" cy="32.0" r="5.70"/>
+ <circle style="fill:#5b6ee1" cx="32.0" cy="32.0" r="3.01"/>
+ <path style="fill:#ffffff;opacity:0.1" d="M 14,4 C 8.46,4 4,8.46 4,14 v 1 C 4,9.46 8.46,5 14,5 h 36 c 5.54,0 10,4.46 10,10 V 14 C 60,8.46 55.54,4 50,4 Z"/>
+</svg>

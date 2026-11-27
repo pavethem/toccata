@@ -1,0 +1,47 @@
+# Maintainer: Tino
+# Built from the local source tree: run ./make-package.sh (it makes the tarball
+# and the checksum, then calls makepkg).
+pkgname=toccata
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="GTK4/libadwaita MPD client with Cantata-style tag editing"
+arch=(any)
+license=(GPL-2.0-or-later)
+depends=(python python-gobject gtk4 'libadwaita>=1.5' python-mutagen)
+optdepends=('mpd: a local music server to connect to')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('91fb64dbe8595a2f1dac8a822cb02908b8cc476a15a6ab15a2a9dc9249ed7778')
+
+check() {
+    cd "$pkgname-$pkgver"
+    PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -t . -q
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    local share=/usr/share/$pkgname
+    # program + its data (the app finds data/icons next to the package)
+    install -d "$pkgdir$share"
+    cp -r toccata data "$pkgdir$share/"
+    find "$pkgdir$share" -name __pycache__ -prune -exec rm -rf {} +
+    python -m compileall -q -o 0 -o 1 -s "$pkgdir" -p / "$pkgdir$share/toccata"
+
+    # launcher; -P: a "toccata" folder in the current directory cannot shadow it
+    install -d "$pkgdir/usr/bin"
+    cat > "$pkgdir/usr/bin/$pkgname" <<END
+#!/bin/sh
+export PYTHONPATH=$share\${PYTHONPATH:+:\$PYTHONPATH}
+exec /usr/bin/python3 -P -m toccata "\$@"
+END
+    chmod 755 "$pkgdir/usr/bin/$pkgname"
+
+    # desktop entry and icons
+    sed 's|^Exec=.*|Exec=toccata %U|' data/io.github.toccata.desktop.in > io.github.toccata.desktop
+    install -Dm644 io.github.toccata.desktop -t "$pkgdir/usr/share/applications"
+    install -Dm644 data/icons/hicolor/scalable/apps/io.github.toccata.svg \
+        -t "$pkgdir/usr/share/icons/hicolor/scalable/apps"
+    install -Dm644 data/icons/hicolor/symbolic/apps/io.github.toccata-symbolic.svg \
+        -t "$pkgdir/usr/share/icons/hicolor/symbolic/apps"
+
+    install -Dm644 README.md -t "$pkgdir/usr/share/doc/$pkgname"
+}

@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Build output (attach packages to releases instead)
+packaging/arch/*.tar.gz
+packaging/arch/*.pkg.tar.*
+packaging/arch/src/
+packaging/arch/pkg/
+packaging/opensuse/*.rpm
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Working notes, kept local
+docs/
+CLAUDE.md
