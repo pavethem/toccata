@@ -17,7 +17,7 @@ whether MPD is reachable. Then:
     sh run.sh
 Set host, password, music folder and replay gain in **Preferences**
 
-# Arch package
+## Arch package
     sh packaging/arch/make-package.sh
     sudo pacman -U packaging/arch/toccata-*-any.pkg.tar.zst
 
