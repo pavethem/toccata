@@ -31,14 +31,14 @@ Features ported from cantata include:
 4. Cover art browser
 5. Info view with lyrics
 6. Album grouped queue (optionally includes a compact mode as well)
-7. Show (album)artists, albums playlists or search
+7. Show (album)artists, albums, playlists or search
 8. Type-ahead search, as well as ctrl+(shift)+f search to filter the artists or the queue
 9. Show composers in artists view for certain tags
 10. Ignore certain prefixes when sorting (e.g. "The Beatles" will sort under B for "Beatles")
 11. Filter artists by genre
 12. Support for multiple partitions, collections and changing of MPD outputs
 
-Some changes I would not port from cantata, unless there is interest:
+Some features I would not port from cantata, unless there is interest:
 
 - Dynamic/Smart playlists
 - Podcasts, soundcloud etc.
@@ -54,7 +54,7 @@ Some changes I would not port from cantata, unless there is interest:
 <img width="4096" height="2208" alt="Tag editor" src="https://github.com/user-attachments/assets/600bbd53-1473-48fa-87ce-a79c37ed9300" />
 
 ### Info view
-<img width="4096" height="2208" alt="Infor view" src="https://github.com/user-attachments/assets/7d9299ad-5843-4041-b9c3-aec1f51f3619" />
+<img width="4096" height="2208" alt="Info view" src="https://github.com/user-attachments/assets/7d9299ad-5843-4041-b9c3-aec1f51f3619" />
 
 ### Cover browser
 <img width="2206" height="1368" alt="Cover browser" src="https://github.com/user-attachments/assets/58257c34-ba3d-4b79-b8b7-315a723ad7b5" />
