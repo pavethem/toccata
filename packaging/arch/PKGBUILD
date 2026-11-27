@@ -2,7 +2,7 @@
 # Built from the local source tree: run ./make-package.sh (it makes the tarball
 # and the checksum, then calls makepkg).
 pkgname=toccata
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="GTK4/libadwaita MPD client with Cantata-style tag editing"
 arch=(any)
@@ -10,7 +10,7 @@ license=(GPL-2.0-or-later)
 depends=(python python-gobject gtk4 'libadwaita>=1.5' python-mutagen)
 optdepends=('mpd: a local music server to connect to')
 source=("$pkgname-$pkgver.tar.gz")
-sha256sums=('91fb64dbe8595a2f1dac8a822cb02908b8cc476a15a6ab15a2a9dc9249ed7778')
+sha256sums=('cba691fb5933cce5f2ca1e3eb08f9f9fedc5d9b221e07058785119b2ca9e9304')
 
 check() {
     cd "$pkgname-$pkgver"

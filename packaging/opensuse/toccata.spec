@@ -4,7 +4,7 @@
 # tarball, fills in the version and calls rpmbuild).
 #
 Name:           toccata
-Version:        1.0.0
+Version:        1.0.1
 Release:        1
 Summary:        GTK4/libadwaita MPD client with Cantata-style tag editing
 License:        GPL-2.0-or-later
@@ -81,5 +81,9 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -t . -q
 %{_datadir}/icons/hicolor/symbolic/apps/io.github.toccata-symbolic.svg
 
 %changelog
+* Fri Nov 27 2026 Tino
+- 1.0.1: album hover buttons no longer appear on an empty-space click;
+  the artist list scrolls to the new artist after an update made in another view
+
 * Sun Nov 15 2026 Tino
 - local build from the source tree
