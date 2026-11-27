@@ -125,6 +125,31 @@ def main():
         check("Play sends the album's tracks", [c[1] for c in COMMANDS if c[0] == "add"], uris)
         check("Play starts playback", any(c[0] == "play" for c in COMMANDS), True)
         check("Play does not open the album", r1.get_expanded(), False)
+        # click the empty space below the last album: the pane takes the keyboard focus
+        # (type-ahead), which lands on the first album's header; its buttons must stay
+        # hidden (user report 2026-11-27: "the mouse hover controls pop up over the first album")
+        win.art_sel.set_selected(names.index("Band"))  # 2 albums: room below them
+        yield 1000
+        rows = win._album_rows()
+        a0, a1 = rows[0], rows[-1]
+        yield from run(lambda: inp.move(*at(win.queue_view)))
+        win.queue_view.grab_focus()
+        yield 300
+        hid_play, hid_add = pixels(win, a0.hover_buttons[0], "b-away"), pixels(win, a0.hover_buttons[1], "b-away-add")
+        ok, lb = a1.compute_bounds(win.album_scroll)
+        empty_y = lb.get_y() + lb.get_height() + 30
+        check("empty space below the last album", empty_y < win.album_scroll.get_height() - 5, True)
+        yield from run(lambda: (inp.move(*at(win.album_scroll, 200, empty_y)), inp.button(True), inp.button(False)))
+        yield 300
+        f = win.get_focus()
+        check("click on empty space: focus in the album pane", f is not None and f.is_ancestor(win.album_scroll), True)
+        check("click on empty space: first album's buttons stay hidden",
+              pixels(win, a0.hover_buttons[0], "b-empty-click") == hid_play, True)
+        # keyboard focus on one of the buttons shows both buttons of that album
+        a0.hover_buttons[0].grab_focus()
+        yield 300
+        check("focused button shown", pixels(win, a0.hover_buttons[0], "b-btn-focus") != hid_play, True)
+        check("its album's other button shown", pixels(win, a0.hover_buttons[1], "b-btn-focus-add") != hid_add, True)
         print("FAILED" if failures else "ALL OK", flush=True)
         application.quit()
 

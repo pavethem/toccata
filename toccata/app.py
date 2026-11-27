@@ -3699,6 +3699,11 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
         self.art_sel = art_sel
 
         self.art_view = art_view
+        # a scroll to the selected artist that came while the list was not shown
+        # (another view, minimised) is done once it is mapped again
+        self._artist_scroll_pending = False
+        art_view.connect("map", self._on_art_view_map)
+        self._debug_art_until = 0.0  # TOCCATA_DEBUG: log artist-list scrolling until then
         self.artist_stack = Gtk.Stack()
         # Type-ahead: typing in the library jumps to the matching artist; the typed text
         # is shown at the bottom of the artist list.
@@ -5698,6 +5703,9 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
         names = sort_names(names, self.settings.ignore_prefixes)  # "The Beatles" under B
         previous = self._selected_artist
         target, self._update_target = getattr(self, "_update_target", None), None
+        if os.environ.get("TOCCATA_DEBUG"):
+            self._debug_art_watch()
+            self._debug_artists("names loaded", f"{len(names)} names, previous={previous!r} target={target!r}")
         self._updating_artists = True  # we load the artist ourselves, once
         try:
             shown = self._set_artists(names)
@@ -5716,13 +5724,29 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
         else:  # the filter hides every artist: still show the remembered one
             self._load_artist(previous if previous in names else names[0])
 
-    def _scroll_to_artist(self, idx):
+    def _scroll_to_artist(self, idx, tries=10):
         # only once the list has a real size; scrolling an unallocated ListView trips a GTK assertion
-        if (self.art_view.get_mapped() and self.art_view.get_height() > 0
-                and idx < self.art_sel.get_n_items()):
-            self.art_view.scroll_to(idx, Gtk.ListScrollFlags.NONE, None)
-            GLib.idle_add(self._center_artist, idx)  # once the list has laid out the new position
+        if idx >= self.art_sel.get_n_items():
+            return False
+        if not self.art_view.get_mapped():
+            self._artist_scroll_pending = True  # not shown: done in _on_art_view_map
+            self._debug_artists("scroll deferred", f"idx={idx}: list not mapped")
+            return False
+        if self.art_view.get_height() <= 0:
+            if tries > 0:  # mapped, not laid out yet
+                GLib.timeout_add(50, self._scroll_to_artist, idx, tries - 1)
+            return False
+        self._artist_scroll_pending = False
+        self._debug_artists("scroll_to", f"idx={idx}")
+        self.art_view.scroll_to(idx, Gtk.ListScrollFlags.NONE, None)
+        GLib.idle_add(self._center_artist, idx)  # once the list has laid out the new position
         return False
+
+    def _on_art_view_map(self, _view):
+        if self._artist_scroll_pending:
+            idx = self.art_sel.get_selected()  # the selection now, not when it was deferred
+            if idx != Gtk.INVALID_LIST_POSITION:
+                GLib.timeout_add(50, self._scroll_to_artist, idx)
 
     def _center_artist(self, idx):
         """Put artist `idx` in the middle of the list (scroll_to only brings it to an
@@ -5732,7 +5756,41 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
             row = adj.get_upper() / n
             target = (idx + 0.5) * row - adj.get_page_size() / 2
             adj.set_value(max(adj.get_lower(), min(target, adj.get_upper() - adj.get_page_size())))
+            self._debug_artists("centred", f"idx={idx} row={row:.1f} target={target:.0f}")
         return False
+
+    # TOCCATA_DEBUG: what moves the artist list after a reload (user report 2026-11-27:
+    # "the artists list still sometimes jumps to the bottom" after adding an album)
+    def _debug_artists(self, tag, extra=""):
+        if not os.environ.get("TOCCATA_DEBUG"):
+            return
+        adj, n = self.art_view.get_vadjustment(), self.art_sel.get_n_items()
+        sel = self.art_sel.get_selected()
+        print(f"artists {tag}: {extra} | selected={self._selected_artist!r} sel_idx={sel} n={n} "
+              f"value={adj.get_value():.0f} upper={adj.get_upper():.0f} page={adj.get_page_size():.0f} "
+              f"mapped={self.art_view.get_mapped()} h={self.art_view.get_height()} "
+              f"view={self.views.get_visible_child_name()} stack={self.artist_stack.get_visible_child_name()}",
+              file=sys.stderr, flush=True)
+
+    def _debug_art_watch(self):
+        """Log every scroll of the artist list for 10 s after a reload, with the Python
+        caller (none: GTK moved it by itself)."""
+        import time
+        self._debug_art_until = time.monotonic() + 10
+        adj = self.art_view.get_vadjustment()
+        if adj is None or getattr(self, "_debug_art_adj", None) is adj:
+            return
+        self._debug_art_adj = adj
+
+        def changed(a):
+            if time.monotonic() > self._debug_art_until:
+                return
+            import traceback
+            caller = [f"{f.name}:{f.lineno}" for f in traceback.extract_stack()[:-1]
+                      if f.filename.endswith("app.py")][-3:]
+            self._debug_artists("value-changed", f"by {caller or 'GTK'}")
+        adj.connect("value-changed", changed)
+        adj.connect("changed", lambda a: changed(a))  # upper / page size
 
     def _set_artists(self, names):
         """Every artist (of the genre); the list shows those the filter lets through,
@@ -6501,7 +6559,10 @@ class App(Adw.Application):
                              # Artists view: an album's Play / Add buttons only on hover
                              " .album-hover-btn { opacity: 0; }"
                              " .album-header:hover .album-hover-btn,"
-                             " .album-header:focus-within .album-hover-btn,"
+                             # keyboard focus on one of the buttons shows both; focus on the
+                             # header itself does not (a click on the pane's empty space
+                             # focuses the first header for type-ahead, user report 2026-11-27)
+                             " .album-header :focus-within > .album-hover-btn,"
                              # Albums view: the same on a tile's cover
                              " .album-tile:hover .album-hover-btn,"
                              # Playlists view: the same on a grouped album's header

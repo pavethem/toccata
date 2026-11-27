@@ -99,6 +99,19 @@ def steps():
           win.art_view.get_vadjustment().get_value() + win.art_view.get_vadjustment().get_page_size()
           >= win.art_view.get_vadjustment().get_upper() - 1, True)
     check("new artist's album selected", selected_albums(win), ["Debut"])
+    # an update while another view is shown: the list cannot scroll then; back in the
+    # library the new artist must be centred, not left off-screen (2026-11-27)
+    win.locate_album(appmod.albumslib.AlbumEntry("Filler 0300", "A"))
+    yield 1200
+    win.views.set_visible_child_name("albums")
+    yield 300
+    update(win, [{"file": "n/4.flac", "Title": "t", "AlbumArtist": "Filler 1500", "Album": "Away",
+                  "Last-Modified": "2026-11-20T10:15:00Z"}], 1795169500)
+    yield 1500
+    check("update in another view: newest artist selected", win._selected_artist, "Filler 1500")
+    win.views.set_visible_child_name("library")
+    yield 800
+    check("back in the library: artist centred", centred(win, "Filler 1500"), True)
     # a plain reload (e.g. a genre switch) keeps the artist
     win.locate_album(appmod.albumslib.AlbumEntry("Filler 1000", "A"))
     yield 1200
