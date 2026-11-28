@@ -4,7 +4,7 @@
 # tarball, fills in the version and calls rpmbuild).
 #
 Name:           toccata
-Version:        1.0.2
+Version:        1.0.3
 Release:        1
 Summary:        GTK4/libadwaita MPD client with Cantata-style tag editing
 License:        GPL-2.0-or-later
@@ -81,6 +81,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -t . -q
 %{_datadir}/icons/hicolor/symbolic/apps/io.github.toccata-symbolic.svg
 
 %changelog
+* Sat Nov 28 2026 Tino
+- 1.0.3: Albums view covers load quickly after a jump when not sorted by
+  "Recently added" (only tiles near the view ask MPD, on-screen ones first)
+
 * Fri Nov 27 2026 Tino
 - 1.0.2: the artist list no longer jumps to the bottom after a database
   update while the window was covered by other windows

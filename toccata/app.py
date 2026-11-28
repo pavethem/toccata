@@ -3084,8 +3084,10 @@ class AlbumsPage:
                                         enable_rubberband=False)
         self.albums_grid.connect("activate", lambda _g, pos: self._albums_act("add", [pos]))
         self.albums_scroll = Gtk.ScrolledWindow(vexpand=True, child=self.albums_grid)
-        self.albums_scroll.get_vadjustment().connect("value-changed", lambda *_: self._albums_maybe_more())
-        self.albums_scroll.get_vadjustment().connect("changed", lambda *_: self._albums_maybe_more())
+        self.albums_scroll.get_vadjustment().connect("value-changed", lambda *_: self._albums_scrolled())
+        self.albums_scroll.get_vadjustment().connect("changed", lambda *_: self._albums_scrolled())
+        self.albums_grid.connect("map", lambda *_: self._schedule_tile_covers())
+        self._tiles_near = frozenset()  # id()s of the items near the view (tile covers)
         overlay, self.albums_typeahead_label = _typeahead_overlay(self.albums_scroll)
         self.albums_status = Adw.StatusPage(icon_name="media-optical-symbolic", title="Albums")
         self.albums_stack = Gtk.Stack(vexpand=True)
@@ -3278,6 +3280,11 @@ class AlbumsPage:
             self._albums_batch_time = time.monotonic()
             self._albums_load_more()
 
+    def _albums_scrolled(self):
+        self._albums_maybe_more()
+        if self.show_covers:
+            self._schedule_tile_covers()
+
     def _albums_retry_more(self):
         self._albums_retry = 0
         self._albums_maybe_more()
@@ -3304,7 +3311,10 @@ class AlbumsPage:
         tile.thumb.set_visible(self.show_covers)
         tile.cover.set_visible(self.show_covers)
         if self.show_covers:
-            self._album_tile_cover(item)
+            # not requested here: GridView binds over a thousand tiles (max-columns x ~30
+            # rows), and each would queue an MPD lookup ahead of the ones on screen
+            item.cover_wanted = True
+            self._schedule_tile_covers()
 
     def _unbind_album_tile(self, _factory, li):
         tile, item = li.get_child(), li.get_item()
@@ -3312,18 +3322,70 @@ class AlbumsPage:
             item.tile = None
         tile.item = None
 
+    def _schedule_tile_covers(self, delay=40):
+        if not getattr(self, "_tile_cover_timer", 0):
+            self._tile_cover_timer = GLib.timeout_add(delay, self._load_tile_covers)
+
+    def _load_tile_covers(self):
+        """Request covers for the tiles on screen (top to bottom), then for those
+        within half a screen of it; queued requests for any other tile are dropped
+        when they come up (`_tile_cover_still_wanted`) and asked again later."""
+        self._tile_cover_timer = 0
+        height = self.albums_grid.get_height()
+        if not self.albums_grid.get_mapped() or height <= 0:
+            self._tiles_near = frozenset()
+            return False  # bind / map / scrolling schedule us again
+        tiles, items, waiting = [], {}, False
+        child = self.albums_grid.get_first_child()
+        origin = Graphene.Point().init(0, 0)
+        while child is not None:
+            tile = child.get_first_child()
+            item = getattr(tile, "item", None)
+            if item is not None:
+                # the bound tiles GridView does not show are unmapped and 0 px high, and
+                # one not laid out yet claims to be at the top: neither counts
+                if child.get_mapped() and tile.get_height() > 0:
+                    ok, p = tile.compute_point(self.albums_grid, origin)
+                    if ok:
+                        tiles.append((id(item), p.x, p.y, tile.get_height()))
+                        items[id(item)] = item
+                else:
+                    waiting = True
+            child = child.get_next_sibling()
+        if not tiles and waiting:  # bound but not laid out yet
+            self._schedule_tile_covers(100)
+            return False
+        order, near = albumslib.cover_order(tiles, height, height / 2)
+        self._tiles_near = frozenset(near)  # replaced whole: the worker threads read it
+        for key in order:
+            item = items[key]
+            if getattr(item, "cover_wanted", False):
+                item.cover_wanted = False
+                self._album_tile_cover(item)
+        return False
+
+    def _tile_cover_still_wanted(self, item, gen):
+        """On a worker thread, right before an MPD request: only for tiles still near
+        the view (plain Python state only)."""
+        if gen != self._albums_gen:
+            return False
+        if id(item) in self._tiles_near:
+            return True
+        item.cover_wanted = True  # asked again when it comes near the view
+        return False
+
     def _album_tile_cover(self, item):
         e = item.entry
+        gen = self._albums_gen
 
         def show(tex, it=item):
             if it.tile is not None and it.tile.item is it:
                 it.tile.thumb.set_texture(tex)
         if e.uri:
-            self.cover_loader.request(e.uri, show, wanted=lambda it=item: it.tile is not None,
+            self.cover_loader.request(e.uri, show, wanted=lambda it=item: self._tile_cover_still_wanted(it, gen),
                                       song={"albumartist": e.artist, "album": e.album}, size=THUMB_SIZE)
             return
-        # no song known yet (album list): one small lookup, only while the tile is on screen
-        gen = self._albums_gen
+        # no song known yet (album list): one small lookup, only while the tile is near the view
 
         def found(uri, err, it=item):
             if gen != self._albums_gen or err is not None or not uri:
@@ -3332,7 +3394,7 @@ class AlbumsPage:
             if it.tile is not None:
                 self._album_tile_cover(it)
         self.album_fetcher.run(lambda c, e=e: albumslib.fetch_album_uri(c, e), found,
-                               wanted=lambda it=item: it.tile is not None)
+                               wanted=lambda it=item: self._tile_cover_still_wanted(it, gen))
 
     # -- selection and actions
     def _albums_selected_positions(self):
@@ -4980,7 +5042,9 @@ class Window(SearchPage, PlaylistsPage, AlbumsPage, Adw.ApplicationWindow):
         for i in range(self.albums_store.get_n_items()):  # Albums view (tiles on screen)
             item = self.albums_store.get_item(i)
             if item.tile is not None and item.entry.uri and CoverFetcher.key_for(item.entry.uri) in dirs:
-                self._album_tile_cover(item)
+                item.cover_wanted = True
+        if self.show_covers:
+            self._schedule_tile_covers()
         for g in self._queue_groups:  # queue and playlist album headers
             header = getattr(g, "header", None)
             uri = self.queue_song_at(g.start)

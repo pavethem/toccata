@@ -204,3 +204,28 @@ def recent_field(protocol_version):
     """Which time to sort "recently added" by on this server."""
     from .search import parse_version
     return "added" if parse_version(protocol_version) >= (0, 24, 0) else "modified"
+
+
+# -- covers for the grid ----------------------------------------------------------------------
+
+def cover_order(tiles, view_height, margin):
+    """Which tiles of the grid should load their cover, and in which order.
+
+    tiles: [(key, x, y, height)] with y relative to the top of the visible area.
+    GTK's GridView keeps far more tiles bound than are on screen (max-columns x
+    ~30 rows, over a thousand), so "bound" is no sign of "wanted". Returns
+    (order, near): the keys within `margin` pixels of the visible area, on-screen
+    ones first, each part top to bottom, left to right; and the same keys as a set.
+    """
+    shown, around = [], []
+    for key, x, y, h in tiles:
+        if y + h <= -margin or y >= view_height + margin:
+            continue
+        if y + h > 0 and y < view_height:
+            shown.append((y, x, key))
+        else:  # distance from the visible area: nearest first
+            around.append((-(y + h) if y < 0 else y - view_height, x, key))
+    shown.sort(key=lambda t: (t[0], t[1]))
+    around.sort(key=lambda t: (t[0], t[1]))
+    order = [k for _d, _x, k in shown + around]
+    return order, set(order)
